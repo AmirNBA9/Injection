@@ -33,6 +33,24 @@ db.injection.insert({success:1});return 1;db.stores.mapReduce(function() { { emi
 {"username": {"$gt":""}, "password": {"$gt":""}}
 {"username":{"$in":["Admin", "4dm1n", "admin", "root", "administrator"]},"password":{"$gt":""}}
 ```
+
+# How to work
+## Import dataset to MongoDB 
+* file name Set_DataToMongo
+
+این کد پایتون انجام کارهای زیر را انجام می‌دهد:
+
+ابتدا به پایگاه داده مانگو دی‌بی متصل می‌شود.
+سپس اطلاعات را از فایل dataset.json می‌خواند.
+در نهایت اطلاعات را به صورت multirow در پایگاه داده مانگو دی‌بی ذخیره می‌کند.
+برای اجرای این کد در PyCharm می‌توانید مراحل زیر را انجام دهید:
+
+کد را در PyCharm باز کنید.
+از طریق منوی Run گزینه Run 'main' را انتخاب کنید.
+پس از اجرای کد، پیام "Data inserted into MongoDB successfully!" نمایش داده خواهد شد.
+همچنین اطمینان حاصل کنید که پایگاه داده مانگو دی‌بی در حال اجرا باشد و فایل dataset.json در همان مسیر قرار داشته باشد.
+
+
 # Reference
 1. [Wiki NOSQL](https://en.wikipedia.org/wiki/NoSQL)
 2. [NOSQL-DataBase](http://nosql-database.org/)
