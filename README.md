@@ -47,4 +47,5 @@ db.injection.insert({success:1});return 1;db.stores.mapReduce(function() { { emi
 11. [Fault-Injection-Dataset](https://github.com/dessertlab/Fault-Injection-Dataset)
 12. [Synthetic-dataset-for-SQL-Injection](https://github.com/lsiddiqsunny/Synthetic-dataset-for-SQL-Injection)
 13. [Injection attacks in apps with NoSQL Backends](https://github.com/riyazwalikar/injection-attacks-nosql-talk)
+14. [400 dataset analysis no-sql dataset](https://github.com/capnmav77/No-SQL_Gen/blob/master/DatasetAnalytics.ipynb)
 
