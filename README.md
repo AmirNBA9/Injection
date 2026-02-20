@@ -1,11 +1,13 @@
 # NoSQL Injection Detection Using Machine Learning
 
-> A research project for detecting NoSQL (MongoDB) injection attacks using supervised machine learning models. This work is part of a thesis project focused on binary classification of malicious vs. benign NoSQL queries.
+> پایان‌نامه کارشناسی ارشد: **بهبود تشخیص حملات تزریق پایگاه‌داده غیررابطه‌ای مبتنی بر یادگیری ماشین**  
+> دانشگاه صنعتی مالک‌اشتر · مجتمع دانشگاهی برق و کامپیوتر · رشته مهندسی کامپیوتر گرایش رایانش امن
 
 ---
 
 ## Table of Contents
 
+- [Thesis Overview](#thesis-overview)
 - [Overview](#overview)
 - [NoSQL Injection Attack Patterns](#nosql-injection-attack-patterns)
 - [Dataset](#dataset)
@@ -19,20 +21,44 @@
 
 ---
 
+## Thesis Overview
+
+| Item | Details |
+|------|---------|
+| **Title (EN)** | Improving NoSQL Injection Detection Using Machine Learning |
+| **Title (FA)** | بهبود تشخیص حملات تزریق پایگاه‌داده غیررابطه‌ای مبتنی بر یادگیری ماشین |
+| **University** | دانشگاه صنعتی مالک‌اشتر (Malek-Ashtar University of Technology) |
+| **Degree** | کارشناسی ارشد مهندسی کامپیوتر – گرایش رایانش امن |
+| **Document** | `Thesis_V3.4.docx` (latest); `Thesis_V3.3.docx`, `Thesis_V3.2.docx` (previous versions) |
+
+**Thesis structure (۶ فصل):**
+
+1. **فصل اول – مقدمه**: بیان مسئله، تشریح موضوع، ضرورت تحقیق، اهداف، نوآوری.
+2. **فصل دوم – مبانی نظری و پیشینه پژوهش**: پایگاه‌داده‌های غیررابطه‌ای، چالش‌های امنیتی، یادگیری ماشین، مدل‌های زبان بزرگ، پیشینه پژوهش.
+3. **فصل سوم – روش پیشنهادی**: خط‌لوله پژوهش، سناریوهای داده (Real-400 و Syn-2000)، تولید داده مصنوعی با GPT-5.2، مدل‌های یادگیری ماشین و تجمیعی، پیاده‌سازی.
+4. **فصل چهارم – تجزیه‌وتحلیل داده‌ها (یافته‌ها)**: معیارهای ارزیابی، بررسی دیتاست‌ها، عملکرد در سه سناریو، مقایسه نهایی.
+5. **فصل پنجم – بحث، نتیجه‌گیری و پیشنهادات**: مرور نتایج، تحلیل در چارچوب پیشینه، نقاط قوت و محدودیت‌ها، کاربردهای عملی، پیشنهادها برای تحقیقات آینده.
+6. **فهرست مراجع**
+
+---
+
 ## Overview
 
-NoSQL databases (especially MongoDB) are increasingly targeted by injection attacks that exploit query operators and JavaScript execution. This project builds a complete ML pipeline to detect such attacks by:
+NoSQL databases (especially **MongoDB**) are increasingly targeted by injection attacks that exploit query operators and JavaScript execution. This project implements a full ML pipeline to detect such attacks by:
 
 1. **Collecting** and labeling NoSQL query patterns (benign & malicious)
 2. **Extracting** 18 numeric features from each query
-3. **Training** multiple ML classifiers with cross-validation
-4. **Evaluating** models using accuracy, precision, recall, F1-score, and ROC-AUC
+3. **Augmenting** data using a Large Language Model (GPT-5.2) to generate synthetic samples (Syn-2000) when real labeled data is limited (Real-400)
+4. **Training** multiple ML classifiers with stratified cross-validation
+5. **Evaluating** models using accuracy, precision, recall, F1-score, ROC-AUC, and confusion matrix (with emphasis on FP/FN for security)
+
+**Key finding from the thesis:** The “best” model depends on the data scenario: **Random Forest** on Real-400, **KNN** on Syn-2000 (Seed=50% Real), and **LightGBM** on Syn-2000 (Seed=All Real-400). Ensemble methods (Soft Voting, Stacking) can minimize FN but may increase FP; the choice should align with the operational security policy (FN-centric vs FP-centric).
 
 ---
 
 ## NoSQL Injection Attack Patterns
 
-Below are examples of common MongoDB injection payloads that this project aims to detect:
+Examples of MongoDB injection payloads that this project aims to detect:
 
 ```javascript
 // Operator-based injection
@@ -63,41 +89,47 @@ db.dropDatabase();
 
 ## Dataset
 
-| Property          | Value                                   |
-|-------------------|-----------------------------------------|
-| **Base records**  | 400 labeled NoSQL queries               |
-| **Synthetic data**| Expanded to 2,000 records               |
-| **Train/Test**    | 80% / 20% stratified split              |
-| **Label 0**       | Benign (~22%)                           |
-| **Label 1**       | Malicious (~78%)                        |
-| **Missing values**| None (after preprocessing)              |
+| Property | Value |
+|----------|--------|
+| **Base dataset (Real-400)** | 400 labeled NoSQL queries (MongoDB-oriented) |
+| **Synthetic data (Syn-2000)** | 2,000 records generated with GPT-5.2 (two seeds: 50% Real, 100% Real) |
+| **Train/Test** | 80% / 20% stratified split |
+| **Label 0** | Benign (~22%) |
+| **Label 1** | Malicious (~78%) |
+| **Missing values** | None after preprocessing |
+
+**Three experimental scenarios (as in thesis):**
+
+- **Scenario 1 – Real-400:** Train/test on the original 400 real samples only.
+- **Scenario 2 – Syn-2000 (Seed=50% Real):** Synthetic data generated using half of the real data as seed; train/test on synthetic (or defined mix).
+- **Scenario 3 – Syn-2000 (Seed=All Real-400):** Synthetic data generated using all 400 real samples as seed; then split Syn-2000 into train/test.
 
 ---
 
 ## Features
 
-18 numeric features are extracted from each NoSQL query:
+18 numeric features are extracted from each NoSQL query (as in the thesis):
 
-| # | Feature                    | Description                              |
-|---|----------------------------|------------------------------------------|
-| 1 | `num_keys`                 | Number of keys in the query              |
-| 2 | `num_operators`            | Count of MongoDB operators (`$ne`, `$gt`, ...) |
-| 3 | `length_user_value`        | Length of the user-supplied value         |
-| 4 | `length_password_value`    | Length of the password value              |
-| 5 | `length_username_value`    | Length of the username value              |
-| 6 | `contains_email_pattern`   | Whether an email pattern is present      |
-| 7 | `contains_ip_pattern`      | Whether an IP address pattern is present |
-| 8 | `nested_keys_exist`        | Presence of nested keys                  |
-| 9 | `num_nested_keys`          | Count of nested keys                     |
-| 10| `contains_numeric_values`  | Whether numeric values are present       |
-| 11| `contains_boolean_values`  | Whether boolean values are present       |
-| 12| `contains_empty_strings`   | Whether empty strings are present        |
-| 13| `contains_fixed_values`    | Whether fixed/hardcoded values are present |
-| 14| `unique_key_count`         | Number of unique keys                    |
-| 15| `data_type_diversity`      | Diversity of data types in the query     |
-| 16| `total_record_length`      | Total character length of the record     |
-| 17| `special_characters_exist` | Whether special characters are present   |
-| 18| `nested_depth`             | Maximum nesting depth of the query       |
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | `num_keys` | Number of keys in the query |
+| 2 | `num_operators` | Count of MongoDB operators (`$ne`, `$gt`, …) |
+| 3 | `length_user_value` | Length of the user-supplied value |
+| 4 | `length_password_value` | Length of the password value |
+| 5 | `length_username_value` | Length of the username value |
+| 6 | `contains_email_pattern` | Whether an email pattern is present |
+| 7 | `contains_ip_pattern` | Whether an IP address pattern is present |
+| 8 | `nested_keys_exist` | Presence of nested keys |
+| 9 | `num_nested_keys` | Count of nested keys |
+| 10 | `contains_numeric_values` | Whether numeric values are present |
+| 11 | `contains_boolean_values` | Whether boolean values are present |
+| 12 | `contains_empty_strings` | Whether empty strings are present |
+| 13 | `contains_fixed_values` | Whether fixed/hardcoded values are present |
+| 14 | `unique_key_count` | Number of unique keys |
+| 15 | `data_type_diversity` | Diversity of data types in the query |
+| 16 | `total_record_length` | Total character length of the record |
+| 17 | `special_characters_exist` | Whether special characters are present |
+| 18 | `nested_depth` | Maximum nesting depth of the query |
 
 ---
 
@@ -105,23 +137,29 @@ db.dropDatabase();
 
 ```
 Injection/
-├── README.md                          # Project documentation
+├── README.md                          # Project documentation (this file)
 ├── NoSQLDetectionv2.ipynb             # Main ML training & evaluation notebook
 ├── splitData.ipynb                    # Train/test split utility
 ├── AnalyticsOfDataset.py              # Dataset generation & analysis
 ├── Set_DataToMongo.py                 # Import data into MongoDB
 ├── Del_RedundantRecord.py             # Remove duplicate records from MongoDB
-├── finaldataset.json                  # Raw labeled dataset (JSON)
-├── Thesis_V3.1.docx                   # Thesis document (v3.1)
-├── Thesis_V3.2.docx                   # Thesis document (v3.2)
+├── finaldataset.json                 # Raw labeled dataset (JSON)
+├── Thesis_V3.2.docx                  # Thesis document (v3.2)
+├── Thesis_V3.3.docx                  # Thesis document (v3.3)
+├── Thesis_V3.4.docx                  # Thesis document (v3.4 – current)
+├── chapter1_refinement/              # Scripts used for Ch.1 transfer & refinement
+│   ├── README.md                     # Description of scripts
+│   ├── move_chapter1_working.py      # Content transfer (Ch.1 → Ch.2/3)
+│   ├── refine_* / fix_* / verify_*   # Refinement and verification scripts
+│   └── chapter1_text.txt             # Extracted Ch.1 text for analysis
 └── Final/                             # Processed CSV datasets
     ├── data400.csv                    # Original 400-record dataset
-    ├── train.csv                      # Full training set
-    ├── train80.csv                    # 80% training split
-    ├── test.csv                       # Full test set
-    ├── test20.csv                     # 20% test split
+    ├── train.csv                     # Full training set
+    ├── train80.csv                   # 80% training split
+    ├── test.csv                      # Full test set
+    ├── test20.csv                    # 20% test split
     ├── synthetic_data_2000_*.csv      # Synthetic datasets (from 400 base)
-    └── synthetic_from_train_*.csv     # Synthetic datasets (from train split)
+    └── synthetic_from_train_*.csv    # Synthetic datasets (from train split)
 ```
 
 ---
@@ -131,12 +169,12 @@ Injection/
 ### Prerequisites
 
 - Python 3.8+
-- MongoDB (running on `localhost:27017`)
+- MongoDB (optional; for `Set_DataToMongo.py`, typically `localhost:27017`)
 
 ### Install Dependencies
 
 ```bash
-pip install pandas numpy scikit-learn xgboost imbalanced-learn matplotlib seaborn plotly pymongo
+pip install pandas numpy scikit-learn xgboost lightgbm imbalanced-learn matplotlib seaborn plotly pymongo
 ```
 
 ---
@@ -149,15 +187,15 @@ pip install pandas numpy scikit-learn xgboost imbalanced-learn matplotlib seabor
 python AnalyticsOfDataset.py
 ```
 
-This script collects NoSQL query patterns, labels them as benign/malicious, removes near-duplicates using Jaccard similarity, and exports `finaldataset.json`.
+Collects NoSQL query patterns, labels them as benign/malicious, removes near-duplicates (e.g. Jaccard similarity), and exports `finaldataset.json`.
 
-### 2. Import Data into MongoDB
+### 2. Import Data into MongoDB (Optional)
 
 ```bash
 python Set_DataToMongo.py
 ```
 
-Connects to MongoDB at `localhost:27017`, reads `finaldataset.json`, and inserts the records into the `dataset.imp` collection. Make sure MongoDB is running before executing this script.
+Reads `finaldataset.json` and inserts into MongoDB (`dataset.imp`). Ensure MongoDB is running.
 
 ### 3. Remove Duplicate Records (Optional)
 
@@ -165,45 +203,55 @@ Connects to MongoDB at `localhost:27017`, reads `finaldataset.json`, and inserts
 python Del_RedundantRecord.py
 ```
 
-Identifies and removes duplicate documents from MongoDB, keeping the most recent entry based on `createdAt`.
+Removes duplicate documents from MongoDB, keeping the most recent by `createdAt`.
 
 ### 4. Split Dataset
 
-Open and run `splitData.ipynb` in Jupyter Notebook. This performs an 80/20 stratified split, preserving the label distribution.
+Use `splitData.ipynb` to perform an 80/20 stratified split while preserving label distribution.
 
 ### 5. Train & Evaluate Models
 
-Open and run `NoSQLDetectionv2.ipynb` in Jupyter Notebook. This notebook handles:
-- Data loading & preprocessing
-- Feature selection (correlation-based)
-- Class balancing with SMOTE
-- Feature scaling with StandardScaler
-- Training 7 classifiers
-- 10-fold Stratified K-Fold cross-validation
-- Performance visualization (confusion matrices, ROC curves)
+Use `NoSQLDetectionv2.ipynb` for:
+
+- Loading and preprocessing data
+- Feature extraction and (optional) correlation-based feature selection
+- Class balancing (e.g. SMOTE) and scaling (e.g. StandardScaler)
+- Training the classifiers listed below
+- Stratified K-Fold cross-validation (e.g. 10-fold)
+- Evaluation and visualizations (confusion matrices, ROC curves)
+- Optional: synthetic data generation and scenario-based evaluation (Real-400, Syn-2000)
 
 ---
 
 ## Machine Learning Models & Results
 
-| Model                | Accuracy  | AUC    |
-|----------------------|-----------|--------|
-| Logistic Regression  | ~78%      | ~85%   |
-| Decision Tree        | ~76%      | ~73%   |
-| Random Forest        | ~81%      | ~89%   |
-| Gradient Boosting    | ~81%      | ~89%   |
-| **XGBoost**          | **~83%**  | **~90%** |
-| KNN                  | ~79%      | ~86%   |
-| Ensemble (Voting)    | ~82%      | ~90%   |
+**Models implemented (as in thesis):**
 
-> **Best performer: XGBoost** with ~82.8% accuracy and ~90.3% AUC.
+| Model | Description |
+|-------|-------------|
+| Logistic Regression | Base linear classifier |
+| Decision Tree | Single tree, interpretable |
+| K-Nearest Neighbors (KNN) | Instance-based, distance metric (e.g. Manhattan) |
+| Support Vector Machine (SVM) | RBF kernel, probability estimates |
+| Random Forest | Bagging of decision trees |
+| Extra Trees | More randomized splits than Random Forest |
+| Gradient Boosting | Sequential tree boosting |
+| AdaBoost | Adaptive boosting |
+| XGBoost | Gradient boosting (optimized) |
+| LightGBM | Gradient boosting (efficient for larger/feature-rich data) |
+| **Soft Voting Ensemble** | Weighted average of probabilities (e.g. KNN, RF, XGBoost, LightGBM, SVM) |
+| **Stacking Ensemble** | Base learners + meta-learner (e.g. RF as final estimator) |
 
-### Techniques Used
+**Best model by scenario (from thesis results):**
 
-- **SMOTE** — Synthetic Minority Over-sampling to handle class imbalance
-- **StandardScaler** — Feature normalization
-- **StratifiedKFold** — 10-fold cross-validation preserving class ratios
-- **Correlation-based feature selection** — Removing highly correlated features
+| Scenario | Best overall (Accuracy / F1 macro) | Note |
+|----------|-------------------------------------|------|
+| Real-400 | **Random Forest** | Stable on small real data |
+| Syn-2000 (Seed=50% Real) | **KNN** | Good local decision boundaries with denser synthetic data |
+| Syn-2000 (Seed=All Real-400) | **LightGBM** | Best balance of accuracy and FP/FN on full-seed synthetic data |
+
+- **FN vs FP:** Stacking can minimize FN (missed attacks) but may increase FP (false alarms); choice depends on security policy (FN-centric vs FP-centric).
+- **Techniques:** SMOTE (optional), StandardScaler, StratifiedKFold, correlation-based feature selection (optional).
 
 ---
 
@@ -215,11 +263,17 @@ Open and run `NoSQLDetectionv2.ipynb` in Jupyter Notebook. This notebook handles
 │  & Labeling      │    │  Extraction      │    │  Split (80/20)  │
 │  (400 queries)   │    │  (18 features)   │    │  Stratified     │
 └─────────────────┘    └──────────────────┘    └────────┬────────┘
-                                                        │
+                                                       │
 ┌─────────────────┐    ┌──────────────────┐    ┌────────▼────────┐
-│  Evaluation &    │<───│  Model Training  │<───│  Preprocessing  │
-│  Comparison      │    │  (7 classifiers) │    │  SMOTE + Scaling│
+│  Evaluation &    │<───│  Model Training  │<───│  Preprocessing   │
+│  Comparison      │    │  (12 classifiers │    │  (+ optional     │
+│  (3 scenarios)   │    │   + 2 ensembles) │    │   SMOTE/Scaling) │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                       │
+                        ┌──────────────────┐    ┌────────▼────────┐
+                        │  Synthetic Data  │<───│  GPT-5.2 (LLM)   │
+                        │  Syn-2000        │    │  (optional)      │
+                        └──────────────────┘    └─────────────────┘
 ```
 
 ---
@@ -246,4 +300,3 @@ Open and run `NoSQLDetectionv2.ipynb` in Jupyter Notebook. This notebook handles
 ## License
 
 This project is developed as part of a thesis research. Please contact the author for usage permissions.
-
